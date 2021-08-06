@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="dev.eastar.data.provider">
+
+    <application>
+        <provider
+            android:name="dev.eastar.data.provider.DataProvider"
+            android:authorities="${applicationId}.data_provider"
+            android:enabled="true"
+            android:exported="true" />
+    </application>
+</manifest>

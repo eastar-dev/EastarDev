@@ -8,3 +8,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "EastarDev"
 include ':app'
+include ':provider'
