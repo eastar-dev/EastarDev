@@ -6,25 +6,18 @@ import android.content.UriMatcher
 import android.database.Cursor
 import android.net.Uri
 import androidx.room.Room
-
+import dev.eastar.data.provider.DataTransferObjectKtx.toDataEntity
 
 
 class DataProvider : ContentProvider() {
-
-    val PACKAGE_NAME = "dev.eastar.dev"
-    val AUTHORITY = "$PACKAGE_NAME.data_provider"
 
     enum class TYPES(val vendor: String, val path: String) {
         DATA_DIR("vnd.dev.eastar.cursor.dir/vnd.dev.eastar.cursor.data_provider.data", "data"),
         DATA_ITEM("vnd.dev.eastar.cursor.item/vnd.dev.eastar.cursor.data_provider.data", "data/#")
     }
 
-    private val Int.types: TYPES
-        get() = TYPES.values()[this]
-
-    private val ContentValues?.toDataEntity: DataEntity
-        get() =  null
-
+    private val Int.types: TYPES?
+        get() = if (this == UriMatcher.NO_MATCH) null else TYPES.values()[this]
 
     private val sUriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {
         addURI(AUTHORITY, TYPES.DATA_DIR.path, TYPES.DATA_DIR.ordinal)
@@ -52,7 +45,14 @@ class DataProvider : ContentProvider() {
 
     override fun insert(uri: Uri, values: ContentValues?): Uri? = when (sUriMatcher.match(uri).types) {
         TYPES.DATA_DIR -> null
-        TYPES.DATA_ITEM -> dataDao.insertDatas(values.toDataEntity)
+        TYPES.DATA_ITEM -> {
+            val id = dataDao.insertItem(values.toDataEntity)
+            if (id.size == 1 && id[0] == uri.lastPathSegment?.toLongOrNull()) {
+                context?.contentResolver?.notifyChange(uri, null)
+                uri
+            } else
+                null
+        }
         else -> null
     }
 
@@ -65,10 +65,19 @@ class DataProvider : ContentProvider() {
         sortOrder: String?
     ): Cursor? = when (sUriMatcher.match(uri).types) {
         TYPES.DATA_DIR -> null
-        TYPES.DATA_ITEM -> null
+        TYPES.DATA_ITEM -> {
+            val cursor = dataDao.getItem()
+            context?.let { cursor.setNotificationUri(it.contentResolver, uri) }
+            cursor
+        }
         else -> null
     }
 
-
     override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<String>?): Int = 0
+
+    companion object {
+        //private const val PACKAGE_NAME = "dev.eastar.dev"
+        private const val PACKAGE_NAME = "dev.eastar.data.provider.test"
+        const val AUTHORITY = "${PACKAGE_NAME}.data_provider"
+    }
 }
