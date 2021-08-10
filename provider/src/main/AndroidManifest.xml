@@ -4,8 +4,8 @@
 
     <application>
         <provider
-            android:name="dev.eastar.data.provider.DataProvider"
-            android:authorities="${applicationId}.data_provider"
+            android:name="dev.eastar.data.provider.CheatProvider"
+            android:authorities="${applicationId}.cheat.provider"
             android:enabled="true"
             android:exported="true" />
     </application>

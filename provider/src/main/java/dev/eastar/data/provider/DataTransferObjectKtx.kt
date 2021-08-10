@@ -3,6 +3,6 @@ package dev.eastar.data.provider
 import android.content.ContentValues
 
 object DataTransferObjectKtx {
-    val ContentValues?.toDataEntity: DataEntity
-        get() = DataEntity(0)
+    val ContentValues.toCheatEntity: CheatEntity
+        get() = CheatEntity(key = getAsString("key"), value = getAsString("value"))
 }
