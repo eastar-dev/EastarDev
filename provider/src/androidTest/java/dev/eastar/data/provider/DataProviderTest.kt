@@ -1,5 +1,6 @@
 package dev.eastar.data.provider
 
+import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Context
 import android.log.Log
@@ -7,9 +8,10 @@ import android.net.Uri
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
-import com.google.common.truth.Truth
+import com.google.common.truth.Truth.assertThat
+import dev.eastar.data.provider.CheatProvider.Companion.AUTHORITY
+import dev.eastar.data.provider.CheatProvider.TYPES.DATA_DIR
 import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
@@ -18,11 +20,20 @@ class DataProviderTest {
     private lateinit var apiDao: CheatDao
     private lateinit var db: CheatDatabase
 
+    private lateinit var resolver: ContentResolver
+
     @Before
     fun createDb() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         db = Room.inMemoryDatabaseBuilder(context, CheatDatabase::class.java).build()
         apiDao = db.dao()
+    }
+
+    @Before
+    fun createResolver() {
+        val appContext = InstrumentationRegistry.getInstrumentation().targetContext
+        assertThat(appContext.packageName).isEqualTo("dev.eastar.dev")
+        resolver = appContext.contentResolver
     }
 
     @After
@@ -33,52 +44,71 @@ class DataProviderTest {
 
     @Test
     fun insert() {
-        val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("dev.eastar.dev", appContext.packageName)
-
-        val uri = Uri.parse("content://${CheatProvider.AUTHORITY}/${CheatProvider.TYPES.DATA_DIR.path}")
+        val uri = Uri.parse("content://$AUTHORITY/${DATA_DIR.path}")
         val millis = System.currentTimeMillis()
-        val uriId = appContext.contentResolver.insert(uri, ContentValues().apply {
+        val uriId = resolver.insert(uri, ContentValues().apply {
             put("key", "key$millis")
             put("value", "$millis")
         })
         Log.e(uriId)
-        Truth.assertThat(uriId).isNotNull()
-        val cursor = appContext.contentResolver.query(uriId!!, null, null, null, null)
-        Truth.assertThat(cursor).isNotNull()
-        Truth.assertThat(cursor?.count).isEqualTo(1)
-        Truth.assertThat(cursor?.moveToFirst()).isTrue()
-        Truth.assertThat(cursor?.getString(cursor.getColumnIndexOrThrow("key"))).isEqualTo("key$millis")
-        Truth.assertThat(cursor?.getString(cursor.getColumnIndexOrThrow("value"))).isEqualTo("$millis")
-    }
-
-    @Test
-    fun query() {
+        assertThat(uriId).isNotNull()
+        val cursor = resolver.query(uriId!!, null, null, null, null)
+        assertThat(cursor).isNotNull()
+        assertThat(cursor?.count).isEqualTo(1)
+        assertThat(cursor?.moveToFirst()).isTrue()
+        assertThat(cursor?.getString(cursor.getColumnIndexOrThrow("key"))).isEqualTo("key$millis")
+        assertThat(cursor?.getString(cursor.getColumnIndexOrThrow("value"))).isEqualTo("$millis")
     }
 
     @Test
     fun getTypeItem() {
         //given
         val matcher = CheatProvider.getUriMatcher()
-        val uri = Uri.parse("content://${CheatProvider.AUTHORITY}/data/id")
+        val uri = Uri.parse("content://$AUTHORITY/${DATA_DIR.path}")
 
         //when
         val actual = matcher.match(uri)
 
         //then
-        Truth.assertThat(actual).isEqualTo(1)
+        assertThat(actual).isEqualTo(DATA_DIR.ordinal)
+    }
+
+    @Test
+    fun getTypeItem2() {
+        //given
+        val matcher = CheatProvider.getUriMatcher()
+        val uri = Uri.parse("content://$AUTHORITY/${DATA_DIR.path}/100")
+
+        //when
+        val actual = matcher.match(uri)
+
+        //then
+        assertThat(actual).isEqualTo(CheatProvider.TYPES.DATA_ITEM.ordinal)
+    }
+
+    @Test
+    fun getTypeItem3() {
+        //given
+        val matcher = CheatProvider.getUriMatcher()
+        val uri = Uri.parse("content://$AUTHORITY/${DATA_DIR.path}/key1")
+
+        //when
+        val actual = matcher.match(uri)
+
+        //then
+        assertThat(actual).isEqualTo(CheatProvider.TYPES.DATA_ITEM_KEY.ordinal)
     }
 
     @Test
     fun getTypeDir() {
         //given
         val matcher = CheatProvider.getUriMatcher()
-        val uri = Uri.parse("content://${CheatProvider.AUTHORITY}/data")
+        val uri = Uri.parse("content://$AUTHORITY/${DATA_DIR.path}")
 
         //when
         val actual = matcher.match(uri)
 
         //then
-        Truth.assertThat(actual).isEqualTo(0)
+        assertThat(actual).isEqualTo(0)
     }
 }

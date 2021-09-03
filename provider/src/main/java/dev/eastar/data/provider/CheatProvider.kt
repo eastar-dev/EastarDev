@@ -91,6 +91,7 @@ class CheatProvider : ContentProvider() {
         private val sUriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {
             addURI(AUTHORITY, TYPES.DATA_DIR.path, TYPES.DATA_DIR.ordinal)
             addURI(AUTHORITY, TYPES.DATA_ITEM.path, TYPES.DATA_ITEM.ordinal)
+            addURI(AUTHORITY, TYPES.DATA_ITEM_KEY.path, TYPES.DATA_ITEM_KEY.ordinal)
         }
 
         private val Int.types: TYPES?
