@@ -9,7 +9,6 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
-import dev.eastar.data.provider.CheatProvider.Companion.AUTHORITY
 import dev.eastar.data.provider.CheatProvider.TYPES.DATA_DIR
 import org.junit.After
 import org.junit.Before
@@ -44,7 +43,7 @@ class DataProviderTest {
 
     @Test
     fun insert() {
-        val uri = Uri.parse("content://$AUTHORITY/${DATA_DIR.path}")
+        val uri = CheatProvider.URI
         val millis = System.currentTimeMillis()
         val uriId = resolver.insert(uri, ContentValues().apply {
             put("key", "key$millis")
@@ -64,7 +63,7 @@ class DataProviderTest {
     fun getTypeItem() {
         //given
         val matcher = CheatProvider.getUriMatcher()
-        val uri = Uri.parse("content://$AUTHORITY/${DATA_DIR.path}")
+        val uri = CheatProvider.URI
 
         //when
         val actual = matcher.match(uri)
@@ -77,7 +76,7 @@ class DataProviderTest {
     fun getTypeItem2() {
         //given
         val matcher = CheatProvider.getUriMatcher()
-        val uri = Uri.parse("content://$AUTHORITY/${DATA_DIR.path}/100")
+        val uri = Uri.withAppendedPath(CheatProvider.URI, "" + 100)
 
         //when
         val actual = matcher.match(uri)
@@ -90,7 +89,7 @@ class DataProviderTest {
     fun getTypeItem3() {
         //given
         val matcher = CheatProvider.getUriMatcher()
-        val uri = Uri.parse("content://$AUTHORITY/${DATA_DIR.path}/key1")
+        val uri = Uri.withAppendedPath(CheatProvider.URI, "key1")
 
         //when
         val actual = matcher.match(uri)
@@ -103,7 +102,7 @@ class DataProviderTest {
     fun getTypeDir() {
         //given
         val matcher = CheatProvider.getUriMatcher()
-        val uri = Uri.parse("content://$AUTHORITY/${DATA_DIR.path}")
+        val uri = CheatProvider.URI
 
         //when
         val actual = matcher.match(uri)

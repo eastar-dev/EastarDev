@@ -29,9 +29,7 @@ class CheatProvider : ContentProvider() {
         return true
     }
 
-
     override fun delete(uri: Uri, selection: String?, selectionArgs: Array<String>?): Int = 0
-
 
     override fun insert(uri: Uri, values: ContentValues?): Uri? {
         values ?: return null
@@ -85,6 +83,8 @@ class CheatProvider : ContentProvider() {
         private const val PACKAGE_NAME = "dev.eastar.dev"
         const val AUTHORITY = "${PACKAGE_NAME}.cheat.provider"
 
+
+
         @VisibleForTesting
         public fun getUriMatcher() = sUriMatcher
 
@@ -104,5 +104,7 @@ class CheatProvider : ContentProvider() {
                 Log.e(result)
                 return result
             }
+
+        val URI = Uri.parse("content://${CheatProvider.AUTHORITY}/${CheatProvider.TYPES.DATA_DIR.path}")
     }
 }

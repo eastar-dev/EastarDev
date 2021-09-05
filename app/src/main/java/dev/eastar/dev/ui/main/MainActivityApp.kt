@@ -3,78 +3,80 @@ package dev.eastar.dev.ui.main
 import android.log.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.Icon
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
-import androidx.compose.material.rememberScaffoldState
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import com.google.accompanist.insets.LocalWindowInsets
-import com.google.accompanist.insets.rememberInsetsPaddingValues
+import com.google.accompanist.insets.navigationBarsPadding
+import com.google.accompanist.insets.statusBarsPadding
 import dev.eastar.data.provider.CheatEntity
 import dev.eastar.dev.R
+import dev.eastar.dev.ui.MainActivityViewModel
 import dev.eastar.dev.ui.theme.EastarDevTheme
-import dev.eastar.dev.ui.topbar.InsetAwareTopAppBar
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun MainActivityApp() {
+fun MainActivityApp(viewModel: MainActivityViewModel = viewModel()) {
     EastarDevTheme {
         // val coroutineScope = rememberCoroutineScope()
+        viewModel.getCheats()
+        Log.e("title0")
+
         Scaffold(
             scaffoldState = rememberScaffoldState(),
             topBar = {
+                Log.e("title")
                 val title = stringResource(id = R.string.app_name)
-                InsetAwareTopAppBar(
-                    title = { Text(text = title) },
+                TopAppBar(
+                    title = {
+                        Log.w("title")
+                        Text(text = title)
+                    },
                     navigationIcon = {
-                        Icon(painter = painterResource(R.drawable.ic_launcher_foreground),
+                        Icon(
+                            painter = painterResource(R.drawable.ic_launcher_foreground),
                             contentDescription = stringResource(R.string.app_name)
                         )
-                    }
+                    },
+                    actions = {
+                        Log.e(this)
+                    },
+                    modifier = Modifier
+                        .statusBarsPadding()
+                        .navigationBarsPadding(bottom = false)
                 )
             }
         ) {
-            PostList(
-                posts = listOf(CheatEntity(0, "1", "2"),
-                    CheatEntity(3, "4", "5")
-                ),
-                navigateToArticle = { id ->
-                    Log.e(id)
-                },
+            Log.e("cheats")
+            val cheats = listOf(
+                CheatEntity(0, "1", "2"),
+                CheatEntity(3, "4", "5")
             )
+
+            val navigateToArticle = { id: Long ->
+                Log.e(id)
+            }
+
+            LazyColumn {
+
+                item { PostListHistorySection(cheats, navigateToArticle) }
+
+            }
         }
     }
 }
 
 @Composable
-private fun PostList(
-    posts: List<CheatEntity>,
-    navigateToArticle: (postId: Long) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    LazyColumn(
-        modifier = modifier,
-        contentPadding = rememberInsetsPaddingValues(
-            insets = LocalWindowInsets.current.systemBars,
-            applyTop = false
-        )
-    ) {
-        item { PostListHistorySection(posts, navigateToArticle) }
-    }
-}
-
-@Composable
 private fun PostListHistorySection(
-    posts: List<CheatEntity>,
+    cheats: List<CheatEntity>,
     navigateToArticle: (Long) -> Unit
 ) {
     Column {
-        repeat(200) {
-            posts.forEach { post ->
-                PostCardHistory(post, navigateToArticle)
+        repeat(10) {
+            cheats.forEachIndexed { index, cheatEntity ->
+                PostCardHistory(cheatEntity.copy(id = ((index * 10 + it).toLong())), navigateToArticle)
                 PostListDivider()
             }
         }
@@ -86,12 +88,15 @@ private fun PostListHistorySection(
 @Composable
 fun DefaultPreview() {
     // MainActivityApp()
-    PostList(
-        posts = listOf(CheatEntity(0, "1", "2"),
-            CheatEntity(3, "4", "5")
-        ),
-        navigateToArticle = { id ->
-            Log.e(id)
-        },
+    val cheats = listOf(
+        CheatEntity(0, "1", "2"),
+        CheatEntity(3, "4", "5")
     )
+    val navigateToArticle = { id: Long ->
+        Log.e(id)
+    }
+
+    LazyColumn {
+        item { PostListHistorySection(cheats, navigateToArticle) }
+    }
 }
