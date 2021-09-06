@@ -10,7 +10,7 @@ class MainActivityViewModel(private val app: Application) : AndroidViewModel(app
         Log.e("getCheats")
 
         app.contentResolver.query(CheatProvider.URI, null, null, null, null).use {
-            Log.e(it)
+            Log.e(it?.columnCount,it?.count)
         }
     }
 }

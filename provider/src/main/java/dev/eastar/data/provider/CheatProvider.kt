@@ -1,14 +1,16 @@
 package dev.eastar.data.provider
 
 import android.content.ContentProvider
+import android.content.ContentUris
 import android.content.ContentValues
 import android.content.UriMatcher
 import android.database.Cursor
+import android.database.sqlite.SQLiteDatabase
 import android.log.Log
 import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import androidx.room.Room
-import dev.eastar.data.provider.DataTransferObjectKtx.toCheatEntity
+import androidx.sqlite.db.SupportSQLiteQueryBuilder
 
 
 class CheatProvider : ContentProvider() {
@@ -29,16 +31,14 @@ class CheatProvider : ContentProvider() {
         return true
     }
 
-    override fun delete(uri: Uri, selection: String?, selectionArgs: Array<String>?): Int = 0
-
     override fun insert(uri: Uri, values: ContentValues?): Uri? {
         values ?: return null
         return when (sUriMatcher.match(uri).types) {
             TYPES.DATA_DIR -> {
-                val key = cheatDao.insertItem(values.toCheatEntity)
-                val uriWithId = Uri.withAppendedPath(uri, key.toString())
-                context?.contentResolver?.notifyChange(uriWithId, null)
-                uriWithId
+                val db = cheatDatabase.openHelper.writableDatabase
+                val retId: Long = db.insert(TYPES.DATA_DIR.table, SQLiteDatabase.CONFLICT_REPLACE, values)
+
+                return ContentUris.withAppendedId(uri, retId)
             }
             else -> null
         }
@@ -52,31 +52,92 @@ class CheatProvider : ContentProvider() {
         sortOrder: String?
     ): Cursor? = when (uri.match) {
         TYPES.DATA_DIR -> {
-            val cursor = cheatDao.getItems()
+            val cursor = cheatDatabase.openHelper.readableDatabase.query(SupportSQLiteQueryBuilder.builder(TYPES.DATA_DIR.table)
+                .selection(selection, selectionArgs)
+                .columns(projection)
+                .orderBy(sortOrder)
+                .create())
+
             context?.let { cursor.setNotificationUri(it.contentResolver, uri) }
             cursor
         }
         TYPES.DATA_ITEM_KEY -> {
             val key = uri.lastPathSegment!!
-            val cursor = cheatDao.getItem(key)
+            val cursor = cheatDatabase.query(SupportSQLiteQueryBuilder.builder(TYPES.DATA_DIR.table)
+                .selection("key=?", arrayOf(key))
+                .columns(projection)
+                .orderBy(sortOrder)
+                .create())
+
             context?.let { cursor.setNotificationUri(it.contentResolver, uri) }
             cursor
         }
         TYPES.DATA_ITEM -> {
-            val id = uri.lastPathSegment!!.toLong()
-            val cursor = cheatDao.getItem(id)
+            val id = uri.lastPathSegment!!
+            val cursor = cheatDatabase.query(SupportSQLiteQueryBuilder.builder(TYPES.DATA_DIR.table)
+                .selection("id=?", arrayOf(id))
+                .columns(projection)
+                .orderBy(sortOrder)
+                .create())
+
             context?.let { cursor.setNotificationUri(it.contentResolver, uri) }
             cursor
         }
         else -> null
     }
 
-    override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<String>?): Int = 0
 
-    enum class TYPES(val vendor: String, val path: String) {
-        DATA_DIR("vnd.dev.eastar.cursor.dir/vnd.dev.eastar.cursor.cheat.provider.data", "data"),
-        DATA_ITEM("vnd.dev.eastar.cursor.item/vnd.dev.eastar.cursor.cheat.provider.data", "data/#"),
-        DATA_ITEM_KEY("vnd.dev.eastar.cursor.item/vnd.dev.eastar.cursor.cheat.provider.data", "data/*")
+    override fun update(uri: Uri,
+                        values: ContentValues?,
+                        selection: String?,
+                        selectionArgs: Array<String>?
+    ): Int = when (uri.match) {
+        TYPES.DATA_DIR -> cheatDatabase.openHelper.writableDatabase.update(TYPES.DATA_DIR.table,
+            SQLiteDatabase.CONFLICT_REPLACE,
+            values,
+            selection, selectionArgs)
+        TYPES.DATA_ITEM_KEY -> {
+            val key = uri.lastPathSegment!!
+            cheatDatabase.openHelper.writableDatabase.update(TYPES.DATA_DIR.table,
+                SQLiteDatabase.CONFLICT_REPLACE,
+                values,
+                "key=?", arrayOf(key))
+        }
+        TYPES.DATA_ITEM -> {
+            val id = uri.lastPathSegment!!
+            cheatDatabase.openHelper.writableDatabase.update(TYPES.DATA_DIR.table,
+                SQLiteDatabase.CONFLICT_REPLACE,
+                values,
+                "id=?", arrayOf(id))
+        }
+        else -> 0
+    }
+
+    override fun delete(uri: Uri,
+                        selection: String?,
+                        selectionArgs: Array<String>?
+    ): Int = when (uri.match) {
+        TYPES.DATA_DIR -> cheatDatabase.openHelper.writableDatabase.delete(TYPES.DATA_DIR.table,
+            selection,
+            selectionArgs)
+
+        TYPES.DATA_ITEM_KEY -> {
+            val key = uri.lastPathSegment!!
+            cheatDatabase.openHelper.writableDatabase.delete(TYPES.DATA_DIR.table,
+                "key=?", arrayOf(key))
+        }
+        TYPES.DATA_ITEM -> {
+            val id = uri.lastPathSegment!!
+            cheatDatabase.openHelper.writableDatabase.delete(TYPES.DATA_DIR.table,
+                "id=?", arrayOf(id))
+        }
+        else -> 0
+    }
+
+    enum class TYPES(val vendor: String, val table: String) {
+        DATA_DIR("vnd.dev.eastar.cursor.dir/vnd.dev.eastar.cursor.cheat.provider.data", "CHEAT"),
+        DATA_ITEM("vnd.dev.eastar.cursor.item/vnd.dev.eastar.cursor.cheat.provider.data", "CHEAT/#"),
+        DATA_ITEM_KEY("vnd.dev.eastar.cursor.item/vnd.dev.eastar.cursor.cheat.provider.data", "CHEAT/*")
     }
 
     companion object {
@@ -84,14 +145,13 @@ class CheatProvider : ContentProvider() {
         const val AUTHORITY = "${PACKAGE_NAME}.cheat.provider"
 
 
-
         @VisibleForTesting
         public fun getUriMatcher() = sUriMatcher
 
         private val sUriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {
-            addURI(AUTHORITY, TYPES.DATA_DIR.path, TYPES.DATA_DIR.ordinal)
-            addURI(AUTHORITY, TYPES.DATA_ITEM.path, TYPES.DATA_ITEM.ordinal)
-            addURI(AUTHORITY, TYPES.DATA_ITEM_KEY.path, TYPES.DATA_ITEM_KEY.ordinal)
+            addURI(AUTHORITY, TYPES.DATA_DIR.table, TYPES.DATA_DIR.ordinal)
+            addURI(AUTHORITY, TYPES.DATA_ITEM.table, TYPES.DATA_ITEM.ordinal)
+            addURI(AUTHORITY, TYPES.DATA_ITEM_KEY.table, TYPES.DATA_ITEM_KEY.ordinal)
         }
 
         private val Int.types: TYPES?
@@ -105,6 +165,6 @@ class CheatProvider : ContentProvider() {
                 return result
             }
 
-        val URI = Uri.parse("content://${CheatProvider.AUTHORITY}/${CheatProvider.TYPES.DATA_DIR.path}")
+        val URI = Uri.parse("content://$AUTHORITY/${TYPES.DATA_DIR.table}")
     }
 }
