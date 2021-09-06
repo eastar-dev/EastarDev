@@ -18,11 +18,13 @@ import dev.eastar.dev.ui.theme.EastarDevTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun MainActivityApp(viewModel: MainActivityViewModel = viewModel()) {
+fun MainActivityApp( viewModel : MainActivityViewModel = viewModel()) {
+    // val viewModel : MainActivityViewModel by viewModels()
+    //  val viewModel : MainActivityViewModel by viewModel()
     EastarDevTheme {
         // val coroutineScope = rememberCoroutineScope()
-        viewModel.getCheats()
         Log.e("title0")
+        viewModel.getCheats()
 
         Scaffold(
             scaffoldState = rememberScaffoldState(),

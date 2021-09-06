@@ -11,6 +11,11 @@ import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import androidx.room.Room
 import androidx.sqlite.db.SupportSQLiteQueryBuilder
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
+import dev.eastar.data.di.CheatDatabaseModule
 
 
 class CheatProvider : ContentProvider() {
@@ -21,18 +26,29 @@ class CheatProvider : ContentProvider() {
     }
 
     private lateinit var cheatDatabase: CheatDatabase
-    private lateinit var cheatDao: CheatDao
+
+    @EntryPoint
+    @InstallIn(SingletonComponent::class)
+    interface CheatProviderEntryPoint {
+        fun cheatDatabase(): CheatDatabase
+    }
 
     override fun onCreate(): Boolean {
-        cheatDatabase = Room.inMemoryDatabaseBuilder(context!!, CheatDatabase::class.java).build()
+        // cheatDatabase = Room.inMemoryDatabaseBuilder(context!!, CheatDatabase::class.java).build()
         //cheatDatabase = Room.databaseBuilder(context!!, CheatDatabase::class.java, "DATA").fallbackToDestructiveMigration().build()
 
-        cheatDao = cheatDatabase.dao()
+        val appContext = context?.applicationContext ?: throw IllegalStateException()
+        val hiltEntryPoint = EntryPointAccessors.fromApplication(appContext, CheatProviderEntryPoint::class.java)
+        cheatDatabase = hiltEntryPoint.cheatDatabase()
+
         return true
     }
 
     override fun insert(uri: Uri, values: ContentValues?): Uri? {
         values ?: return null
+
+
+
         return when (sUriMatcher.match(uri).types) {
             TYPES.DATA_DIR -> {
                 val db = cheatDatabase.openHelper.writableDatabase
