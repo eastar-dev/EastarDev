@@ -3,25 +3,36 @@ package dev.eastar.dev.ui.main
 import android.log.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.*
+import androidx.compose.material.Icon
+import androidx.compose.material.Scaffold
+import androidx.compose.material.Text
+import androidx.compose.material.TopAppBar
+import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.insets.navigationBarsPadding
 import com.google.accompanist.insets.statusBarsPadding
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import dev.eastar.data.provider.CheatEntity
 import dev.eastar.dev.R
 import dev.eastar.dev.ui.MainActivityViewModel
-import dev.eastar.dev.ui.theme.EastarDevTheme
-import androidx.lifecycle.viewmodel.compose.viewModel
+import dev.eastar.dev.ui.theme.AppTheme
 
 @Composable
 fun MainActivityApp( viewModel : MainActivityViewModel = viewModel()) {
     // val viewModel : MainActivityViewModel by viewModels()
     //  val viewModel : MainActivityViewModel by viewModel()
-    EastarDevTheme {
+    val systemUiController = rememberSystemUiController()
+    SideEffect {
+        systemUiController.setSystemBarsColor(Color(0x55c20029))
+    }
+    AppTheme {
         // val coroutineScope = rememberCoroutineScope()
         Log.e("title0")
         viewModel.getCheats()
@@ -33,7 +44,6 @@ fun MainActivityApp( viewModel : MainActivityViewModel = viewModel()) {
                 val title = stringResource(id = R.string.app_name)
                 TopAppBar(
                     title = {
-                        Log.w("title")
                         Text(text = title)
                     },
                     navigationIcon = {
